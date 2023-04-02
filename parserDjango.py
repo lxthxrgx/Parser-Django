@@ -4,24 +4,46 @@ import json
 import requests
 import re
 import time 
+import random
 
-url_proxy = 'https://advanced.name/freeproxy/64243e3f50649'#free proxy
+proxy_url = 'https://advanced.name/freeproxy/64286e8f80204'#free proxy
 
-response = requests.get(url_proxy.encode()) 
+response = requests.get(proxy_url.encode()) 
 proxy = response.content.decode()
 
 proxy_filter = r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\:\d{1,5}'
 proxy_list = re.findall(proxy_filter, proxy)
 
-for i_http in proxy_list:
-    i_http = ('http://' +  i_http)
+proxies = {
+    'http':[],
+    'https':[]
+}
 
-for i_https in proxy_list:
-    i_https = ('https://' + i_https)
+for proxy_http in proxy_list:
+    proxy_http = ('http://' +  proxy_http)
+    proxies['http'].append(proxy_http)
+
+for proxy_https in proxy_list:
+    proxy_https = ('https://' + proxy_https)
+    proxies['https'].append(proxy_https) 
+
+
+if len(proxies['http']) > 0:
+    proxy_random = random.choice(proxies['http'])
+    print('Random http proxy: ', proxy_random)
+else:
+    print('Список прокси-серверов пуст')
+
+if len(proxies['https']) > 0:
+    proxy_random = random.choice(proxies['https'])
+    print(proxy_random)
+    print('Random https proxy: ', proxy_random)
+else:
+    print('Список прокси-серверов пуст',)  
 
 headers_list = [
     # Firefox 77 Mac
-     {
+    {
         "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:77.0) Gecko/20100101 Firefox/77.0",
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
         "Accept-Language": "en-US,en;q=0.5",
@@ -78,7 +100,6 @@ for row in sheet.iter_rows(min_col=1, max_col=1):
 	for cell in row:
 		url = 'https://kadastr.live/api/parcels/'+cell.value+'/history/?format=json'
 
-
 response = requests.get(url)
 if (response.status_code == 200):
 	data = response.json()
@@ -91,7 +112,6 @@ if (response.status_code == 200):
 		print('Ошибка декодирования JSON-данных:', url) 
 else:
 	a_null = print('Ошибка получения JSON-данных:', response.status_code,url)				
-
 
 database = sq.connect('ltx.db')
 cursor = database.cursor()
@@ -136,3 +156,4 @@ cursor.execute('''INSERT INTO django(
 wbook.close()
 database.commit()
 database.close()
+#{"User-Agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.97 Safari/537.36"}
