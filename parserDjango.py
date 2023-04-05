@@ -243,6 +243,10 @@ def proxy_file_error():
             print(colored('Error:', 'red'), json_error, 'Url:', colored(url, 'red'))
     return response_json
 
+database = sq.connect('ltx.db')
+cursor = database.cursor()
+cursor.execute('DELETE FROM django')
+database.commit()
 proxy_file = io.open(r'practice\Parser\url.txt')
 proxy_file_data = proxy_file.read()
 proxy_file_lines = proxy_file_data.splitlines()
@@ -299,8 +303,55 @@ for url in proxy_file_dict:
         print(colored('Error inserting data:', 'red'), e)
         database.rollback()
 
+cursor.execute('SELECT COUNT(*) FROM django_test')
+django_test = cursor.fetchall()[0]
 
+cursor.execute('SELECT COUNT(*) FROM django')
+django = cursor.fetchall()[0]
+duplicate_rows = set(django_test).intersection(django)
 
+if len(duplicate_rows) > 0:
+    print(colored('There are duplicate rows between django_test and django', 'red'))
+    print(colored('Duplicate rows:', 'red'), duplicate_rows)
+    print(colored('Data inserted successfully', 'green'))
+else:
+    print(colored('There are no duplicate rows between django_test and django', 'green'))
+    cursor.execute('''INSERT INTO django(
+    id,
+	cadnum,
+	category,
+	area,
+	unit_area,
+	koatuu,
+	use,
+	purpose,
+	purpose_code,
+	ownership,
+	ownershipcode,
+	geometry,
+	address,
+	valuation_value,
+	valuation_date
+    ) 
+    SELECT 
+    id,
+	cadnum,
+	category,
+	area,
+	unit_area,
+	koatuu,
+	use,
+	purpose,
+	purpose_code,
+	ownership,
+	ownershipcode,
+	geometry,
+	address,
+	valuation_value,
+	valuation_date
+    FROM django_test
+    ''')
+    database.commit()
 database.commit()
 database.close()
 
