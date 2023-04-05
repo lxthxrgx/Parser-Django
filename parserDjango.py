@@ -3,10 +3,11 @@ import sqlite3 as sq
 import json
 import requests
 import re
-import time 
 import random
 from collections import OrderedDict
 import random
+from termcolor import colored
+import io
 
 def headers():
     headers_list = [  
@@ -79,7 +80,7 @@ def proxy_random():
         'https':[]
         }
 
-    proxy_url = 'https://advanced.name/freeproxy/642b39b8b02a7' # free proxy
+    proxy_url = 'https://advanced.name/freeproxy/642ca2506ebf6' # free proxy
     response = requests.get(proxy_url)
     proxy = response.content.decode()
 
@@ -129,38 +130,178 @@ def proxy_protocol_test():
 
     except requests.exceptions.RequestException:
         pass
-    print(tested_proxies, "\u2714")
+    print(colored( 'Proxy: ', 'green' ),tested_proxies, colored("\u2714",'green'), '\n')
     tested_proxies = dict(tested_proxies)
     return tested_proxies
     
 wbook = load_workbook(r'excel\excel sources\parcels.xlsx')
 sheet = wbook['parcels']
 
-for row in sheet.iter_rows(min_col=1, max_col=1):
-	for cell in row:
-		url = 'https://kadastr.live/api/parcels/' + cell.value + '/history/?format=json'
-                
-print('-------------------')
-print(proxy_protocol_test())
-print('-------------------')
-
 proxy_dict_ = proxy_protocol_test()
 
 headers_func = headers()
 
-response = requests.get(url, proxies = proxy_dict_,headers = headers_func)
+database = sq.connect('ltx.db')
+cursor = database.cursor()
 
-for response_get_json_data in response:
-    if (response.status_code == 200):
-        data = response.json()
-        data_str = json.dumps(data)
-        data_filtered_str = data_str.replace('""', r'\"\"')
+cursor.execute('''CREATE TABLE IF NOT EXISTS django(
+	"id"	TEXT,
+	"cadnum"	TEXT,
+	"category"	TEXT,
+	"area"	TEXT,
+	"unit_area"	TEXT,
+	"koatuu"	TEXT,
+	"use"	TEXT,
+	"purpose"	TEXT,
+	"purpose_code"	TEXT,
+	"ownership"	TEXT,
+	"ownershipcode"	TEXT,
+	"geometry"	TEXT,
+	"address"	TEXT,
+	"valuation_value"	TEXT,
+	"valuation_date"	TEXT
+)''')
+cursor.execute('DELETE FROM django')
+database.commit()
+for row in sheet.iter_rows(min_col=1, max_col=1):
+    for cell in row:
+        url = 'https://kadastr.live/api/parcels/' + cell.value + '/history/?format=json'
+        response = requests.get(url, proxies = proxy_dict_,headers = headers_func)
+        wbook.close()
+        if (response.status_code == 200):
+            data = response.json()
+            data_str = json.dumps(data)
+            data_filtered_str = data_str.replace('""', r'\"\"')
+            try:
+                data_filtered = json.loads(data_filtered_str)
+                cursor.execute('''INSERT INTO django(
+					id,
+					cadnum,
+					category,
+					area,
+					unit_area,
+					koatuu,
+					use,
+					purpose,
+					purpose_code,
+					ownership,
+					ownershipcode,
+					geometry,
+					address,
+					valuation_value,
+					valuation_date)
+					VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)''', 
+					( data_filtered['id'], data_filtered['cadnum'], data_filtered['category'], data_filtered['area'], data_filtered['unit_area'], data_filtered['koatuu'], data_filtered['use'], data_filtered['purpose'], data_filtered['purpose_code'], data_filtered['ownership'], data_filtered['ownershipcode'], json.dumps(data_filtered['geometry']), data_filtered['address'], data_filtered['valuation_value'], data_filtered['valuation_date']))
+            except json.decoder.JSONDecodeError as a:
+                url_error = url
+                f_o = io.open(r'practice\Parser\url.txt', mode='a')
+                f_o.write(str(a) + ': ' + url_error + '\n')
+                f_o.close()
+        else: 
+            a_null = print('Ошибка получения JSON-данных:', response.status_code,url)
+
+def proxy_file_error():
+    proxy_file = io.open(r'practice\Parser\url.txt')
+    proxy_file_data = proxy_file.read()
+    proxy_file_lines = proxy_file_data.splitlines()
+
+    proxy_file_dict = {}
+    for line in proxy_file_lines:
+        values = line.split()
+        proxy_file_values_list = values[8]
+        proxy_file_dict[values[8]] = proxy_file_values_list
+
+        #print(proxy_file_dict)
+
+    print('Len: ',colored(len(proxy_file_dict), 'green'))
+
+    values_set = set(proxy_file_dict.values())
+    if len(values_set) == len(proxy_file_dict.values()):
+        print(colored("No repeated values", 'green' ))
+    else:
+        print(colored ( "There are repeated values", 'red'))
+
+    for url in proxy_file_dict:
         try:
-             data_filtered = json.loads(data_filtered_str)
-        except json.decoder.JSONDecodeError:
-            print('Ошибка декодирования JSON-данных:', url) 
-    else: 
-         a_null = print('Ошибка получения JSON-данных:', response.status_code,url)
-print(data_filtered)
+            response = requests.get(url)
+            response_json = json.loads(response.text)
+            #print(response_json)
+        except Exception as json_error:
+            print(colored( 'Error: ', 'red'),{json_error}, 'Url: ', colored({url},'red'))
+    proxy_file.close()
+
+
+    for url in proxy_file_dict:
+        try:
+            response = requests.get(url)
+            if response.ok:
+                response_json = response.json()
+                print(response_json)
+            else:
+                print(colored('Error: Response not OK', 'red'), 'Url:', colored(url, 'red'))
+        except Exception as json_error:
+            print(colored('Error:', 'red'), json_error, 'Url:', colored(url, 'red'))
+    return response_json
+
+proxy_file = io.open(r'practice\Parser\url.txt')
+proxy_file_data = proxy_file.read()
+proxy_file_lines = proxy_file_data.splitlines()
+
+proxy_file_dict = {}
+for line in proxy_file_lines:
+    values = line.split()
+    proxy_file_values_list = values[8]
+    proxy_file_dict[values[8]] = proxy_file_values_list
+
+print('Len: ',colored(len(proxy_file_dict), 'green'))
+
+values_set = set(proxy_file_dict.values())
+if len(values_set) == len(proxy_file_dict.values()):
+    print(colored("No repeated values", 'green' ))
+else:
+    print(colored ( "There are repeated values", 'red'))
+
+for url in proxy_file_dict:
+    try:
+        response = requests.get(url)
+        response_json = json.loads(response.text)
+        response_json_dumps = json.dumps(response_json)
+        response_json_filtered = response_json_dumps.replace("''", r"\'\'")
+        response_json_filtered = response_json
+
+        class Database_Json:
+            id = response_json['id']
+            cadnum = response_json['cadnum']
+            category = response_json['category']
+            area = response_json['area']
+            unit_area = response_json['unit_area']
+            koatuu = response_json['koatuu']
+            use = response_json['use']
+            purpose = response_json['purpose']
+            purpose_code = response_json['purpose_code']
+            ownership = response_json['ownership']
+            ownershipcode = response_json['ownershipcode']
+            geometry = response_json['geometry']
+            address = response_json['address']
+            valuation_value = response_json['valuation_value']
+            valuation_date = response_json['valuation_date']
+
+            def to_list(self):
+                return [self.id, self.cadnum, self.category, self.area, self.unit_area, self.koatuu, self.use, self.purpose, self.purpose_code, self.ownership, self.ownershipcode, json.dumps(self.geometry), self.address, self.valuation_value, self.valuation_date]
+
+        database_json = Database_Json()
+        values = database_json.to_list()
+        cursor.execute('''INSERT INTO django_test(id,cadnum,category,area,unit_area,koatuu,use,purpose,purpose_code,ownership,ownershipcode,geometry,address,valuation_value,valuation_date) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)''', values)
+
+        database.commit()
+        print(colored('Data inserted successfully', 'green'))
+    except Exception as e:
+        print(colored('Error inserting data:', 'red'), e)
+        database.rollback()
+
+
+
+database.commit()
+database.close()
 
 
