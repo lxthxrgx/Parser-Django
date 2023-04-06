@@ -20,7 +20,7 @@ def headers():
             "DNT": "1",
             "Connection": "keep-alive",
             "Upgrade-Insecure-Requests": "1"
-        },
+        },Ф
         # Firefox 77 Windows
         {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:77.0) Gecko/20100101 Firefox/77.0",
@@ -80,7 +80,7 @@ def proxy_random():
         'https':[]
         }
 
-    proxy_url = 'https://advanced.name/freeproxy/642ca2506ebf6' # free proxy
+    proxy_url = 'https://advanced.name/freeproxy/642e879d4abd3' # free proxy
     response = requests.get(proxy_url)
     proxy = response.content.decode()
 
@@ -161,8 +161,27 @@ cursor.execute('''CREATE TABLE IF NOT EXISTS django(
 	"valuation_value"	TEXT,
 	"valuation_date"	TEXT
 )''')
+cursor.execute('''CREATE TABLE IF NOT EXISTS django_test(
+	"id"	TEXT,
+	"cadnum"	TEXT,
+	"category"	TEXT,
+	"area"	TEXT,
+	"unit_area"	TEXT,
+	"koatuu"	TEXT,
+	"use"	TEXT,
+	"purpose"	TEXT,
+	"purpose_code"	TEXT,
+	"ownership"	TEXT,
+	"ownershipcode"	TEXT,
+	"geometry"	TEXT,
+	"address"	TEXT,
+	"valuation_value"	TEXT,
+	"valuation_date"	TEXT
+)''')
 cursor.execute('DELETE FROM django')
-database.commit()
+
+
+
 for row in sheet.iter_rows(min_col=1, max_col=1):
     for cell in row:
         url = 'https://kadastr.live/api/parcels/' + cell.value + '/history/?format=json'
@@ -199,6 +218,9 @@ for row in sheet.iter_rows(min_col=1, max_col=1):
                 f_o.close()
         else: 
             a_null = print('Ошибка получения JSON-данных:', response.status_code,url)
+database.commit()
+database.close()
+
 
 def proxy_file_error():
     proxy_file = io.open(r'practice\Parser\url.txt')
@@ -243,10 +265,10 @@ def proxy_file_error():
             print(colored('Error:', 'red'), json_error, 'Url:', colored(url, 'red'))
     return response_json
 
+#cursor.execute('DELETE FROM django')
 database = sq.connect('ltx.db')
 cursor = database.cursor()
-cursor.execute('DELETE FROM django')
-database.commit()
+
 proxy_file = io.open(r'practice\Parser\url.txt')
 proxy_file_data = proxy_file.read()
 proxy_file_lines = proxy_file_data.splitlines()
@@ -296,9 +318,8 @@ for url in proxy_file_dict:
         database_json = Database_Json()
         values = database_json.to_list()
         cursor.execute('''INSERT INTO django_test(id,cadnum,category,area,unit_area,koatuu,use,purpose,purpose_code,ownership,ownershipcode,geometry,address,valuation_value,valuation_date) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)''', values)
-
-        database.commit()
         print(colored('Data inserted successfully', 'green'))
+        print('django - test: ', cursor.fetchall())
     except Exception as e:
         print(colored('Error inserting data:', 'red'), e)
         database.rollback()
@@ -351,7 +372,6 @@ else:
 	valuation_date
     FROM django_test
     ''')
-    database.commit()
 database.commit()
 database.close()
 
