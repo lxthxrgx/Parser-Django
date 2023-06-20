@@ -234,7 +234,7 @@ with cf.ThreadPoolExecutor(max_workers=10) as executor:
             ( data_filtered['id'], data_filtered['cadnum'], data_filtered['category'], data_filtered['area'], data_filtered['unit_area'], data_filtered['koatuu'], data_filtered['use'], data_filtered['purpose'], data_filtered['purpose_code'], data_filtered['ownership'], data_filtered['ownershipcode'], json.dumps(data_filtered['geometry']), data_filtered['address'], data_filtered['valuation_value'], data_filtered['valuation_date']))
 print("Количество ячеек:", count_cells)
 print("Количество запросов:", count_requests)
-#print("Количество запросов 2: ", count_requests1)
+
 
 
 print('--------------')
@@ -252,7 +252,6 @@ def proxy_file_error():
             for url_txt in urls_txt:
                 proxy_file_dict[url_txt] = None
                 #print(url_txt)
-    # здесь может быть какой-то дополнительный код
 
     print(proxy_file_dict)
     print('Len: ',colored(len(proxy_file_dict), 'green'))
