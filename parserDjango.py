@@ -94,15 +94,9 @@ def proxy_random():
         proxy_http = ('http://' +  proxy_http)
         proxies_dictionary['http'].append(proxy_http)
 
-    #print('Proxy http: ',proxies_dictionary['http'])
-
     for proxy_https in proxy_list:
         proxy_https = ('https://' + proxy_https)
         proxies_dictionary['https'].append(proxy_https)
-
-    #print('Proxy https: ',proxies_dictionary['https'])    
-
-    #print('Proxy dictionary: ',proxies_dictionary)
 
     if len(proxies_dictionary['http']) > 0:
         proxy_random_http = random.choice(proxies_dictionary['http'])
